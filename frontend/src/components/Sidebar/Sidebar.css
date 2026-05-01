@@ -1,0 +1,125 @@
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--glass-border);
+    display: flex;
+    flex-direction: column;
+    padding: 1.5rem;
+    height: 100%;
+}
+
+.logo {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    color: var(--accent);
+    font-family: 'Outfit', sans-serif;
+}
+
+.new-chat-btn {
+    width: 100%;
+    padding: 0.75rem;
+    border-radius: 12px;
+    border: 1px solid var(--accent);
+    background: transparent;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.new-chat-btn:hover {
+    background: var(--accent);
+    box-shadow: 0 0 15px var(--accent-glow);
+}
+
+.history-section {
+    flex: 1;
+    overflow-y: auto;
+    margin-top: 2rem;
+}
+
+.section-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--text-secondary);
+    margin-bottom: 1rem;
+}
+
+.history-item {
+    padding: 0.75rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    transition: var(--transition);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.history-item:hover {
+    background: var(--glass);
+    color: var(--text-primary);
+}
+
+.history-item.active {
+    background: var(--glass);
+    color: var(--text-primary);
+    border-left: 3px solid var(--accent);
+}
+
+.empty-history {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-align: center;
+    margin-top: 1rem;
+}
+
+.sidebar-footer {
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--glass-border);
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.avatar {
+    width: 36px;
+    height: 36px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.username {
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.plan {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}

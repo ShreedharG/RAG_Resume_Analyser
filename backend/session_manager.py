@@ -2,11 +2,10 @@ import json
 import os
 from datetime import datetime
 
-SESSIONS_FILE = "data/sessions.json"
+SESSIONS_FILE = "backend/data/chats/chat_history.json"
 
 def ensure_sessions_file():
-    if not os.path.exists("data"):
-        os.makedirs("data")
+    os.makedirs(os.path.dirname(SESSIONS_FILE), exist_ok=True)
     if not os.path.exists(SESSIONS_FILE):
         with open(SESSIONS_FILE, "w") as f:
             json.dump({}, f)

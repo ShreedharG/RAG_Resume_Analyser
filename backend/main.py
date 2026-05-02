@@ -21,10 +21,19 @@ import uuid
 # Global pipeline instance
 pipeline = RAGPipeline()
 
+RAW_UPLOAD_DIR = "backend/data/raw_upload"
+os.makedirs(RAW_UPLOAD_DIR, exist_ok=True)
+
 @app.post("/initialize")
 async def initialize(resume: UploadFile = File(...), jd: UploadFile = File(...)):
     resume_bytes = await resume.read()
     jd_bytes = await jd.read()
+    
+    # Save raw files
+    with open(os.path.join(RAW_UPLOAD_DIR, resume.filename), "wb") as f:
+        f.write(resume_bytes)
+    with open(os.path.join(RAW_UPLOAD_DIR, jd.filename), "wb") as f:
+        f.write(jd_bytes)
     
     # Process RAG
     result = pipeline.initialize_pipeline(resume_bytes, jd_bytes)

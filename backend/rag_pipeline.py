@@ -23,7 +23,7 @@ class RAGPipeline:
         self.all_chunks = chunk_text(combined_text)
         
         # Initialize Vector Store
-        self.vector_store = get_vector_store(self.all_chunks, self.embedding_fn)
+        self.vector_store = get_vector_store(self.all_chunks, self.embedding_fn, persist_directory="backend/data/embeddings")
         
         # Initialize Hybrid Retriever
         self.retriever = HybridRetriever(self.vector_store, self.all_chunks)

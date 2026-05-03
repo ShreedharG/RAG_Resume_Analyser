@@ -1,11 +1,20 @@
 import pdfplumber
 import re
 
-def extract_text_from_pdf(path: str) -> str:
-    """Extract clean text from PDF using pdfplumber."""
+import io
+
+def extract_text_from_pdf(input_data) -> str:
+    """
+    Extract clean text from PDF using pdfplumber.
+    input_data can be a file path (str) or raw bytes.
+    """
     
+    # If input is bytes, wrap it in BytesIO so pdfplumber can 'seek'
+    if isinstance(input_data, bytes):
+        input_data = io.BytesIO(input_data)
+
     text_parts = []
-    with pdfplumber.open(path) as pdf:
+    with pdfplumber.open(input_data) as pdf:
         for page in pdf.pages:
             page_text = page.extract_text()
             

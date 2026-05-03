@@ -32,11 +32,19 @@ def chunk_documents(resume_text: str, jd_text: str, chunk_size=200, overlap=50):
     # Resume chunks
     resume_chunks = chunk_text(resume_text, chunk_size, overlap)
     for chunk in resume_chunks:
-        all_chunks.append({"text": chunk,"source": "resume"})
+        all_chunks.append({
+            "text": chunk,
+            "source": "resume_file",
+            "type": "resume"
+        })
 
     # JD chunks
     jd_chunks = chunk_text(jd_text, chunk_size, overlap)
     for chunk in jd_chunks:
-        all_chunks.append({"text": chunk,"source": "jd"})
+        all_chunks.append({
+            "text": chunk,
+            "source": "jd_file",
+            "type": "jd"
+        })
 
     return all_chunks

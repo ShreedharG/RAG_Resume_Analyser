@@ -12,24 +12,34 @@ class ChromaStore:
         # But LangChain's Chroma wrapper is usually easier.
         pass
 
-# We will use LangChain's Chroma wrapper in the main pipeline for simplicity
-from langchain_community.vectorstores import Chroma
 
-def get_vector_store(chunks, embedding_function, persist_directory="backend/data/embeddings", collection_name="resume_collection"):
-    """Creates and returns a Chroma vector store."""
+def get_vector_store(chunks, embedding_function, persist_directory="backend/data/embeddings", collection_name="resume_jd_collection"):
+    """Creates or updates a Chroma vector store with metadata."""
     if not os.path.exists(persist_directory):
         os.makedirs(persist_directory)
         
-    vector_db = Chroma.from_texts(
-        texts=chunks,
-        embedding=embedding_function,
-        persist_directory=persist_directory,
-        collection_name=collection_name
-    )
+    # Extract text and metadata from chunks (which are dicts)
+    texts = [c["text"] for c in chunks]
+    metadatas = [{"source": c["source"]} for c in chunks]
+        
+    if os.path.exists(os.path.join(persist_directory, "chroma.sqlite3")):
+        # Load existing and add new texts
+        vector_db = load_vector_store(embedding_function, persist_directory, collection_name)
+        vector_db.add_texts(texts=texts, metadatas=metadatas)
+    else:
+        # Create new vector store
+        vector_db = Chroma.from_texts(
+            texts=texts,
+            embedding=embedding_function,
+            metadatas=metadatas,
+            persist_directory=persist_directory,
+            collection_name=collection_name
+        )
+    
     vector_db.persist()
     return vector_db
 
-def load_vector_store(embedding_function, persist_directory="backend/data/embeddings", collection_name="resume_collection"):
+def load_vector_store(embedding_function, persist_directory="backend/data/embeddings", collection_name="resume_jd_collection"):
     """Loads an existing Chroma vector store."""
     return Chroma(
         persist_directory=persist_directory,

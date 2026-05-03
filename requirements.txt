@@ -10,3 +10,5 @@ python-dotenv
 pandas
 rank_bm25
 google-generativeai
+pdfplumber
+openai

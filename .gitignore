@@ -6,3 +6,6 @@
 backend/data/chats
 backend/data/embeddings
 backend/data/raw_upload
+
+# Test files
+test/

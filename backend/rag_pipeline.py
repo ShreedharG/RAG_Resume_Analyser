@@ -1,5 +1,5 @@
 from ingestion.parser import extract_text_from_pdf
-from ingestion.chunker import chunk_text
+from ingestion.chunker import chunk_documents
 from embed_pipeline.embedd import get_embedding_function
 from vectorstore.chroma_store import get_vector_store
 from retrieval.retriever import HybridRetriever
@@ -18,16 +18,13 @@ class RAGPipeline:
         """Processes documents and initializes the vector store."""
         resume_text = extract_text_from_pdf(resume_content)
         jd_text = extract_text_from_pdf(jd_content)
-        
-        combined_text = f"RESUME CONTENT:\n{resume_text}\n\nJOB DESCRIPTION:\n{jd_text}"
-        self.all_chunks = chunk_text(combined_text)
-        
+
+        self.all_chunks = chunk_documents(resume_text, jd_text, chunk_size=200, overlap=50)
+
         # Initialize Vector Store
         self.vector_store = get_vector_store(self.all_chunks, self.embedding_fn, persist_directory="backend/data/embeddings")
-        
         # Initialize Hybrid Retriever
         self.retriever = HybridRetriever(self.vector_store, self.all_chunks)
-        
         return {"status": "success", "chunks": len(self.all_chunks)}
 
     def answer_query(self, query: str):

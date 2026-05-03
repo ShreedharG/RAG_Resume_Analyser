@@ -1,25 +1,74 @@
-from rank_bm25 import BM25Okapi
-import numpy as np
+import re
+from collections import Counter
+
 
 class HybridRetriever:
-    def __init__(self, vector_store, chunks):
-        self.vector_store = vector_store
-        self.chunks = chunks
-        # Tokenize chunks for BM25 (chunks are now dictionaries)
-        tokenized_chunks = [chunk["text"].lower().split() for chunk in chunks]
-        self.bm25 = BM25Okapi(tokenized_chunks)
+    def __init__(self, collection, embedding_fn):
+        self.collection = collection
+        self.embedding_fn = embedding_fn
 
-    def get_relevant_documents(self, query: str, k: int = 4):
-        # 1. Vector Search
-        vector_results = self.vector_store.similarity_search(query, k=k)
-        vector_contents = [doc.page_content for doc in vector_results]
-        
-        # 2. BM25 Search
-        tokenized_query = query.lower().split()
-        bm25_scores = self.bm25.get_scores(tokenized_query)
-        top_n_bm25_indices = np.argsort(bm25_scores)[-k:][::-1]
-        bm25_contents = [self.chunks[i]["text"] for i in top_n_bm25_indices]
-        
-        # 3. Combine (Simple deduplication for now)
-        combined = list(set(vector_contents + bm25_contents))
-        return combined[:k]
+    # -------------------------------
+    # Simple keyword scoring
+    # -------------------------------
+    def _keyword_score(self, query, text):
+        STOPWORDS = {"what", "is", "the", "are", "does", "do", "a", "an", "of", "and", "to", "in"}
+
+        query_words = [
+            w for w in re.findall(r"\w+", query.lower())
+            if w not in STOPWORDS
+        ]
+
+        text_words = re.findall(r"\w+", text.lower())
+        text_freq = Counter(text_words)
+
+        score = 0
+        for word in query_words:
+            score += text_freq.get(word, 0)
+
+        return score
+
+    # -------------------------------
+    # Semantic retrieval + reranking
+    # -------------------------------
+    def get_relevant_documents(self, query, k_resume=3, k_jd=3, min_score=0.0):
+        results = self.collection.query(
+            query_texts=[query],
+            n_results=12  # fetch a bit more, then filter
+        )
+
+        docs = results["documents"][0]
+        metas = results["metadatas"][0]
+        distances = results["distances"][0]
+
+        combined = []
+
+        for doc, meta, dist in zip(docs, metas, distances):
+            # filter junk
+            if len(doc.split()) < 20:
+                continue
+
+            semantic_score = 1 / (1 + dist)
+            keyword_score = self._keyword_score(query, doc)
+            keyword_score_norm = min(keyword_score / 5, 1)
+
+            final_score = 0.7 * semantic_score + 0.3 * keyword_score_norm
+
+            if final_score < min_score:
+                continue
+
+            combined.append({
+                "text": doc,
+                "type": meta["type"],
+                "source": meta["source"],
+                "score": final_score
+            })
+
+        combined.sort(key=lambda x: x["score"], reverse=True)
+
+        resume_chunks = [c for c in combined if c["type"] == "resume"][:k_resume]
+        jd_chunks     = [c for c in combined if c["type"] == "jd"][:k_jd]
+
+        return {
+            "resume_chunks": resume_chunks,
+            "jd_chunks": jd_chunks
+        }

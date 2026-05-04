@@ -1,8 +1,8 @@
-from ingestion.parser import extract_text_from_pdf, normalize_text
-from ingestion.chunker import chunk_documents
-from embed_pipeline.embedd import get_embedding_function
-from vectorstore.chroma_store import get_vector_store
-from retrieval.retriever import HybridRetriever
+from parser import extract_text_from_pdf, normalize_text
+from chunker import chunk_documents
+from embedd import get_embedding_function
+from chroma_store import get_vector_store
+from retriever import HybridRetriever
 
 class RAGPipeline:
     def __init__(self):

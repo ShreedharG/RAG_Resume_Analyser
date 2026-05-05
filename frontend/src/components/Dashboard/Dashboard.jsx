@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import DropZone from '../UI/DropZone';
 import './Dashboard.css';
 
-const Dashboard = ({ onStartAnalysis }) => {
+const Dashboard = ({ onStartAnalysis, backendStatus }) => {
     const [files, setFiles] = useState({ resume: null, jd: null });
     const [isLoading, setIsLoading] = useState(false);
 
@@ -11,12 +11,20 @@ const Dashboard = ({ onStartAnalysis }) => {
     };
 
     const handleStart = async () => {
+        if (!isReady || isLoading) return;
+        
         setIsLoading(true);
-        await onStartAnalysis(files);
-        setIsLoading(false);
+        try {
+            await onStartAnalysis(files);
+        } catch (error) {
+            console.error("Analysis failed:", error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const isReady = files.resume && files.jd;
+    const isBackendOnline = backendStatus === 'online';
 
     return (
         <div className="dashboard">
@@ -41,15 +49,22 @@ const Dashboard = ({ onStartAnalysis }) => {
             <div className="actions">
                 <button 
                     className="primary-btn" 
-                    disabled={!isReady || isLoading}
+                    disabled={!isReady || isLoading || !isBackendOnline}
                     onClick={handleStart}
                 >
                     {isLoading ? (
                         <><i className="fas fa-spinner fa-spin"></i> Initializing RAG...</>
+                    ) : !isBackendOnline ? (
+                        <><i className="fas fa-exclamation-triangle"></i> Backend Offline</>
                     ) : (
                         'Initialize RAG Analysis'
                     )}
                 </button>
+                {!isBackendOnline && (
+                    <p style={{ color: 'var(--error)', fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                        Please ensure the backend server is running on port 8000
+                    </p>
+                )}
             </div>
         </div>
     );

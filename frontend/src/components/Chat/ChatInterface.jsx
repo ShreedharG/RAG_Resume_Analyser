@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './ChatInterface.css';
 
-const ChatInterface = ({ messages, onSendMessage }) => {
+const ChatInterface = ({ messages, onSendMessage, backendStatus }) => {
     const [input, setInput] = useState("");
     const messagesEndRef = useRef(null);
 
@@ -13,7 +13,7 @@ const ChatInterface = ({ messages, onSendMessage }) => {
 
     const handleSubmit = (e) => {
         if (e) e.preventDefault();
-        if (input.trim()) {
+        if (input.trim() && backendStatus === 'online') {
             onSendMessage(input);
             setInput("");
         }
@@ -25,6 +25,8 @@ const ChatInterface = ({ messages, onSendMessage }) => {
             handleSubmit();
         }
     };
+
+    const isBackendOnline = backendStatus === 'online';
 
     return (
         <div className="chat-interface">
@@ -58,17 +60,20 @@ const ChatInterface = ({ messages, onSendMessage }) => {
             <div className="input-area">
                 <div className="input-wrapper">
                     <textarea 
-                        placeholder="Ask a question about your resume..." 
+                        placeholder={isBackendOnline ? "Ask a question about your resume..." : "Backend offline - cannot send messages"}
                         rows="1"
                         value={input}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={handleKeyDown}
+                        disabled={!isBackendOnline}
                     />
-                    <button className="send-btn" onClick={handleSubmit}>
+                    <button className="send-btn" onClick={handleSubmit} disabled={!isBackendOnline || !input.trim()}>
                         <i className="fas fa-paper-plane"></i>
                     </button>
                 </div>
-                <p className="disclaimer">AI-generated content. Verify important details.</p>
+                <p className="disclaimer">
+                    {isBackendOnline ? "AI-generated content. Verify important details." : "Backend connection required to send messages."}
+                </p>
             </div>
         </div>
     );

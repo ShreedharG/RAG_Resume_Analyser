@@ -50,7 +50,17 @@ const ChatInterface = ({ messages, onSendMessage, backendStatus }) => {
                             <div className="message-avatar">
                                 <i className={`fas fa-${msg.role === 'ai' ? 'robot' : 'user'}`}></i>
                             </div>
-                            <div className="message-bubble">{msg.content}</div>
+                            <div className="message-bubble">
+                                {typeof msg.content === 'string' ? (
+                                    msg.content.trim().startsWith('{') ? (
+                                        <pre className="json-response">{msg.content}</pre>
+                                    ) : (
+                                        msg.content
+                                    )
+                                ) : (
+                                    JSON.stringify(msg.content, null, 2)
+                                )}
+                            </div>
                         </div>
                     ))
                 )}

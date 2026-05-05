@@ -70,12 +70,15 @@ async def chat(session_id: str = Form(...), query: str = Form(...)):
         add_message(session_id, "user", query)
         
         # 2. Generate AI response
-        response = pipeline.answer_query(query)
+        pipeline_result = pipeline.answer_query(query)
+        # Extract the answer string (which is the AI response)
+        # If pipeline_result is already a string (fallback), use it; otherwise get the 'answer' field
+        answer = pipeline_result.get("answer", str(pipeline_result)) if isinstance(pipeline_result, dict) else str(pipeline_result)
         
         # 3. Save AI message
-        add_message(session_id, "ai", response)
+        add_message(session_id, "ai", answer)
         
-        return {"status": "success", "response": response}
+        return {"status": "success", "response": answer}
     except Exception as e:
         return {"status": "error", "message": str(e)}, 500
 

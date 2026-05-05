@@ -1,6 +1,6 @@
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
-from .rag_pipeline import RAGPipeline
+from rag_pipeline import RAGPipeline
 import uvicorn
 import os
 
@@ -18,14 +18,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from .session_manager import list_sessions, get_session, add_message, create_session
+from session_manager import list_sessions, get_session, add_message, create_session
 from datetime import datetime
 import uuid
 
 # Global pipeline instance
 pipeline = RAGPipeline()
 
-RAW_UPLOAD_DIR = "backend/data/raw_upload"
+RAW_UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "data", "raw_upload")
 os.makedirs(RAW_UPLOAD_DIR, exist_ok=True)
 
 @app.post("/initialize")

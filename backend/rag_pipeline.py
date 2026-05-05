@@ -3,6 +3,7 @@ from chunker import chunk_documents
 from embedd import get_embedding_function
 from chroma_store import get_vector_store
 from retriever import HybridRetriever
+from generator import generate
 
 class RAGPipeline:
     def __init__(self):
@@ -15,11 +16,6 @@ class RAGPipeline:
 
     def initialize_pipeline(self, resume_content: bytes, jd_content: bytes):
         """Processes documents and initializes the vector store."""
-
-        self.retriever = HybridRetriever(
-            self.vector_store,
-            self.embedding_fn
-        )
 
         # 1. Extract text
         resume_text = extract_text_from_pdf(resume_content)
@@ -60,51 +56,55 @@ class RAGPipeline:
             "jd_chunks": len(self.jd_chunks)
         }
     
+    def build_context(self, results, k=5):
+        context = ""
+
+        resume_chunks = results["resume_chunks"][:k]
+        jd_chunks = results["jd_chunks"][:k]
+
+        for r in resume_chunks:
+            context += f"[RESUME]\n{r['text']}\n\n"
+
+        for r in jd_chunks:
+            context += f"[JOB DESCRIPTION]\n{r['text']}\n\n"
+
+        return context.strip()
+    
     def answer_query(self, query: str):
         if not self.retriever:
             return "Please upload documents first."
 
         results = self.retriever.get_relevant_documents(query)
 
-        return results
+        context = self.build_context(results)
 
+        prompt = f"""You are an AI resume analyzer.
 
-if __name__ == "__main__":
-    import os
+Return STRICT JSON only:
 
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    PROJECT_ROOT = os.path.dirname(BASE_DIR)
+{{
+  "matching_skills": [],
+  "missing_skills": [],
+  "backend_match_score": 0,
+  "reason": ""
+}}
 
-    resume_path = os.path.join(PROJECT_ROOT, "test", "Shreedhar_Goyal_SDE-1.pdf")
-    jd_path = os.path.join(PROJECT_ROOT, "test", "JD_Data Solutions Associate Intern.pdf")
+Rules:
+- Extract skills explicitly from context
+- Compare resume vs job description
+- If something is not present, do NOT assume
+- Do NOT add text outside JSON
 
-    print("Resume Path:", resume_path)
-    print("JD Path:", jd_path)
+Context:
+{context}
 
-    with open(resume_path, "rb") as f:
-        resume_bytes = f.read()
+Question:
+{query}
+"""
 
-    with open(jd_path, "rb") as f:
-        jd_bytes = f.read()
+        answer = generate(prompt)
 
-    # Initialize pipeline
-    pipeline = RAGPipeline()
-    init_res = pipeline.initialize_pipeline(resume_bytes, jd_bytes)
-
-    print("\nPipeline Init:", init_res)
-
-    # Query test
-    results = pipeline.answer_query("What backend skills match the job?")
-    print("\n--- Hybrid Results ---")
-
-    print("\n🔹 Resume Chunks:")
-    for i, r in enumerate(results["resume_chunks"]):
-        print(f"\nResult {i+1}")
-        print(f"Score: {r['score']}")
-        print(f"Text: {r['text'][:200]}")
-
-    print("\n🔹 JD Chunks:")
-    for i, r in enumerate(results["jd_chunks"]):
-        print(f"\nResult {i+1}")
-        print(f"Score: {r['score']}")
-        print(f"Text: {r['text'][:200]}")
+        return {
+            "answer": answer,
+            "debug": results
+        }

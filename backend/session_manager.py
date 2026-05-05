@@ -2,7 +2,8 @@ import json
 import os
 from datetime import datetime
 
-SESSIONS_FILE = "backend/data/chats/chat_history.json"
+# Get the absolute path to the chat history file
+SESSIONS_FILE = os.path.join(os.path.dirname(__file__), "data", "chats", "chat_history.json")
 
 def ensure_sessions_file():
     os.makedirs(os.path.dirname(SESSIONS_FILE), exist_ok=True)

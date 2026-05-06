@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import './ChatInterface.css';
+import AnalysisResult from './AnalysisResult';
 
-const ChatInterface = ({ messages, onSendMessage, backendStatus }) => {
+const ChatInterface = ({ messages, onSendMessage, backendStatus, isThinking }) => {
     const [input, setInput] = useState("");
     const messagesEndRef = useRef(null);
 
@@ -9,11 +10,11 @@ const ChatInterface = ({ messages, onSendMessage, backendStatus }) => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     };
 
-    useEffect(scrollToBottom, [messages]);
+    useEffect(scrollToBottom, [messages, isThinking]);
 
     const handleSubmit = (e) => {
         if (e) e.preventDefault();
-        if (input.trim() && backendStatus === 'online') {
+        if (input.trim() && backendStatus === 'online' && !isThinking) {
             onSendMessage(input);
             setInput("");
         }
@@ -52,18 +53,34 @@ const ChatInterface = ({ messages, onSendMessage, backendStatus }) => {
                             </div>
                             <div className="message-bubble">
                                 {typeof msg.content === 'string' ? (
-                                    msg.content.trim().startsWith('{') ? (
-                                        <pre className="json-response">{msg.content}</pre>
+                                    msg.content.trim().startsWith('{') || msg.content.trim().startsWith('```json') ? (
+                                        <AnalysisResult data={msg.content} />
                                     ) : (
                                         msg.content
                                     )
                                 ) : (
-                                    JSON.stringify(msg.content, null, 2)
+                                    <AnalysisResult data={msg.content} />
                                 )}
                             </div>
                         </div>
                     ))
                 )}
+                
+                {isThinking && (
+                    <div className="thinking-wrapper">
+                        <div className="message-avatar" style={{ background: 'var(--accent)' }}>
+                            <i className="fas fa-robot"></i>
+                        </div>
+                        <div className="thinking-box">
+                            <div className="dot-loader">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
                 <div ref={messagesEndRef} />
             </div>
 

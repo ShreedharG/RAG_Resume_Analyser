@@ -1,4 +1,5 @@
-from fastapi import FastAPI, UploadFile, File, Form
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from rag_pipeline import RAGPipeline
 import uvicorn
@@ -35,25 +36,33 @@ async def initialize(resume: UploadFile = File(...), jd: UploadFile = File(...))
         jd_bytes = await jd.read()
         
         if not resume_bytes or not jd_bytes:
-            return {"status": "error", "message": "Files cannot be empty"}, 400
+            raise HTTPException(status_code=400, detail="Files cannot be empty")
         
         # Save raw files
-        with open(os.path.join(RAW_UPLOAD_DIR, resume.filename), "wb") as f:
-            f.write(resume_bytes)
-        with open(os.path.join(RAW_UPLOAD_DIR, jd.filename), "wb") as f:
-            f.write(jd_bytes)
+        try:
+            with open(os.path.join(RAW_UPLOAD_DIR, resume.filename), "wb") as f:
+                f.write(resume_bytes)
+            with open(os.path.join(RAW_UPLOAD_DIR, jd.filename), "wb") as f:
+                f.write(jd_bytes)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Failed to save files: {str(e)}")
         
         # Process RAG
-        result = pipeline.initialize_pipeline(resume_bytes, jd_bytes)
+        try:
+            result = pipeline.initialize_pipeline(resume_bytes, jd_bytes)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Pipeline initialization failed: {str(e)}")
         
         # Create a new session
         session_id = str(uuid.uuid4())
-        title = f"Analysis: {resume.filename.split('.')[0]} ({datetime.now().strftime('%H:%M')})"
-        session_data = create_session(session_id, title)
+        title = f"{resume.filename.split('.')[0]} ({datetime.now().strftime('%H:%M')})"
+        session_data = create_session(session_id, title, resume.filename, jd.filename)
         
         return {"status": "success", "session": session_data}
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"status": "error", "message": str(e)}, 500
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/chat")
 async def chat(session_id: str = Form(...), query: str = Form(...)):
@@ -61,16 +70,20 @@ async def chat(session_id: str = Form(...), query: str = Form(...)):
         # Verify session exists
         session = get_session(session_id)
         if not session:
-            return {"status": "error", "message": "Session not found"}, 404
+            raise HTTPException(status_code=404, detail="Session not found")
         
         if not query or not query.strip():
-            return {"status": "error", "message": "Query cannot be empty"}, 400
+            raise HTTPException(status_code=400, detail="Query cannot be empty")
         
         # 1. Save user message
         add_message(session_id, "user", query)
         
         # 2. Generate AI response
-        pipeline_result = pipeline.answer_query(query)
+        try:
+            pipeline_result = pipeline.answer_query(query)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Pipeline query failed: {str(e)}")
+            
         # Extract the answer string (which is the AI response)
         # If pipeline_result is already a string (fallback), use it; otherwise get the 'answer' field
         answer = pipeline_result.get("answer", str(pipeline_result)) if isinstance(pipeline_result, dict) else str(pipeline_result)
@@ -79,8 +92,10 @@ async def chat(session_id: str = Form(...), query: str = Form(...)):
         add_message(session_id, "ai", answer)
         
         return {"status": "success", "response": answer}
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"status": "error", "message": str(e)}, 500
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/sessions")
 def get_all_sessions():
@@ -91,10 +106,25 @@ def get_single_session(session_id: str):
     try:
         session = get_session(session_id)
         if not session:
-            return {"status": "error", "message": "Session not found"}, 404
+            raise HTTPException(status_code=404, detail="Session not found")
         return {"status": "success", "session": session}
+    except HTTPException:
+        raise
     except Exception as e:
-        return {"status": "error", "message": str(e)}, 500
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/sessions/{session_id}")
+def delete_session_endpoint(session_id: str):
+    try:
+        from session_manager import delete_session
+        success = delete_session(session_id)
+        if not success:
+            raise HTTPException(status_code=404, detail="Session not found")
+        return {"status": "success"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.get("/health")
 def health():

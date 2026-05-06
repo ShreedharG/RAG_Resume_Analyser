@@ -2,15 +2,17 @@ import React, { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar/Sidebar';
 import Dashboard from './components/Dashboard/Dashboard';
 import ChatInterface from './components/Chat/ChatInterface';
+import LandingPage from './components/Landing/LandingPage';
 import './styles/global.css';
 import { api } from './services/api';
 
 function App() {
-    const [view, setView] = useState('upload'); // 'upload' or 'chat'
+    const [view, setView] = useState('landing'); // 'landing', 'upload', 'chat'
     const [history, setHistory] = useState([]);
     const [activeSession, setActiveSession] = useState(null);
     const [messages, setMessages] = useState([]);
     const [backendStatus, setBackendStatus] = useState('checking'); // 'checking', 'online', 'offline'
+    const [isThinking, setIsThinking] = useState(false);
 
     // Load history from backend
     useEffect(() => {
@@ -35,6 +37,7 @@ function App() {
     const fetchSessions = async () => {
         try {
             const data = await api.getSessions();
+            data.reverse();
             setHistory(data);
         } catch (error) {
             console.error("Failed to fetch sessions:", error);
@@ -60,6 +63,7 @@ function App() {
         // Optimistic UI update
         const userMsg = { role: 'user', content: text };
         setMessages(prev => [...prev, userMsg]);
+        setIsThinking(true);
 
         try {
             const result = await api.chat(activeSession, text);
@@ -72,6 +76,8 @@ function App() {
             // Remove the optimistic user message and show error
             setMessages(prev => prev.slice(0, -1));
             alert(`Failed to send message: ${error.message}`);
+        } finally {
+            setIsThinking(false);
         }
     };
 
@@ -95,13 +101,31 @@ function App() {
         }
     };
 
+    const handleDeleteSession = async (id) => {
+        try {
+            await api.deleteSession(id);
+            setHistory(prev => prev.filter(s => s.id !== id));
+            if (activeSession === id) {
+                setView('upload');
+                setMessages([]);
+                setActiveSession(null);
+            }
+        } catch (error) {
+            console.error("Failed to delete session:", error);
+            alert(`Failed to delete session: ${error.message}`);
+        }
+    };
+
     return (
         <div className="app-container">
+            {view === 'landing' && <LandingPage onEnterApp={() => setView('upload')} />}
+            
             <Sidebar 
                 history={history} 
                 activeSession={activeSession}
                 onNewChat={handleNewChat}
                 onSelectSession={handleSelectSession}
+                onDeleteSession={handleDeleteSession}
             />
             
             <main className="main-content" style={{ flex: 1, position: 'relative' }}>
@@ -124,7 +148,12 @@ function App() {
                 {view === 'upload' ? (
                     <Dashboard onStartAnalysis={handleStartAnalysis} backendStatus={backendStatus} />
                 ) : (
-                    <ChatInterface messages={messages} onSendMessage={handleSendMessage} backendStatus={backendStatus} />
+                    <ChatInterface 
+                        messages={messages} 
+                        onSendMessage={handleSendMessage} 
+                        backendStatus={backendStatus} 
+                        isThinking={isThinking}
+                    />
                 )}
             </main>
         </div>

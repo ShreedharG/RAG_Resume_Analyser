@@ -20,11 +20,13 @@ def save_sessions(sessions):
     with open(SESSIONS_FILE, "w") as f:
         json.dump(sessions, f, indent=4)
 
-def create_session(session_id: str, title: str):
+def create_session(session_id: str, title: str, resume_name: str = "", jd_name: str = ""):
     sessions = load_sessions()
     sessions[session_id] = {
         "id": session_id,
         "title": title,
+        "resume_name": resume_name,
+        "jd_name": jd_name,
         "created_at": datetime.now().isoformat(),
         "messages": []
     }
@@ -51,6 +53,20 @@ def list_sessions():
     sessions = load_sessions()
     # Return metadata only for list
     return [
-        {"id": s["id"], "title": s["title"], "created_at": s["created_at"]}
+        {
+            "id": s["id"], 
+            "title": s["title"], 
+            "resume_name": s.get("resume_name", ""),
+            "jd_name": s.get("jd_name", ""),
+            "created_at": s["created_at"]
+        }
         for s in sessions.values()
     ]
+
+def delete_session(session_id: str) -> bool:
+    sessions = load_sessions()
+    if session_id not in sessions:
+        return False
+    del sessions[session_id]
+    save_sessions(sessions)
+    return True

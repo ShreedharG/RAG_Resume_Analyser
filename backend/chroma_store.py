@@ -4,11 +4,11 @@ import os
 class ChromaStore:
     def __init__(self, persist_directory: str = "backend/data/embeddings"):
         # 🔥 Always resolve absolute path
-        BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.persist_directory = os.path.join(BASE_DIR, persist_directory)
 
         if not os.path.exists(self.persist_directory):
-            os.makedirs(self.persist_directory)
+            os.makedirs(self.persist_directory, exist_ok=True)
 
         self.client = chromadb.PersistentClient(path=self.persist_directory)
 

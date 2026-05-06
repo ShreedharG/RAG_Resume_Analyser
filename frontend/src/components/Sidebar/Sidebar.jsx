@@ -1,7 +1,6 @@
-import React from 'react';
 import './Sidebar.css';
 
-const Sidebar = ({ history, activeSession, onNewChat, onSelectSession }) => {
+const Sidebar = ({ history, activeSession, onNewChat, onSelectSession, onDeleteSession }) => {
     return (
         <aside className="sidebar">
             <div className="sidebar-header">
@@ -21,16 +20,45 @@ const Sidebar = ({ history, activeSession, onNewChat, onSelectSession }) => {
                     {history.length === 0 ? (
                         <p className="empty-history">No past sessions</p>
                     ) : (
-                        history.map((item) => (
-                            <div 
-                                key={item.id} 
-                                className={`history-item ${activeSession === item.id ? 'active' : ''}`}
-                                onClick={() => onSelectSession(item.id)}
-                            >
-                                <i className="fas fa-message"></i>
-                                <span>{item.title}</span>
-                            </div>
-                        ))
+                        history.map((item) => {
+                            const date = new Date(item.created_at);
+                            const formattedDate = date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+                            const formattedTime = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                            return (
+                                <div 
+                                    key={item.id} 
+                                    className={`history-item ${activeSession === item.id ? 'active' : ''}`}
+                                    onClick={() => onSelectSession(item.id)}
+                                >
+                                    <div className="history-icon">
+                                        <i className="fas fa-file-pdf"></i>
+                                    </div>
+                                    <div className="history-content">
+                                        <div className="history-filenames">
+                                            <span className="resume-name">{item.resume_name || "Untitled"}</span>
+                                            <span className="vs-label">vs</span>
+                                            <span className="jd-name">{item.jd_name || "JD"}</span>
+                                        </div>
+                                        <div className="history-meta">
+                                            <span>{formattedDate}</span>
+                                            <span className="separator">•</span>
+                                            <span>{formattedTime}</span>
+                                        </div>
+                                    </div>
+                                    <button 
+                                        className="delete-btn"
+                                        title="Delete session"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            onDeleteSession(item.id);
+                                        }}
+                                    >
+                                        <i className="fas fa-trash-can"></i>
+                                    </button>
+                                </div>
+                            );
+                        })
                     )}
                 </div>
             </div>
@@ -40,7 +68,6 @@ const Sidebar = ({ history, activeSession, onNewChat, onSelectSession }) => {
                     <div className="avatar">S</div>
                     <div className="user-info">
                         <span className="username">Shreedhar G</span>
-                        <span className="plan">Premium Plan</span>
                     </div>
                 </div>
             </div>

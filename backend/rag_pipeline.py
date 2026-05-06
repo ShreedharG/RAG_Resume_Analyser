@@ -78,22 +78,40 @@ class RAGPipeline:
 
         context = self.build_context(results)
 
-        prompt = f"""You are an AI resume analyzer.
+        prompt = f"""
+You are an AI Resume Analyzer.
 
-Return STRICT JSON only:
+Your task is to compare the candidate resume with the job description using ONLY the provided context.
 
-{{
-  "matching_skills": [],
-  "missing_skills": [],
-  "backend_match_score": 0,
-  "reason": ""
-}}
+Return STRICT VALID JSON ONLY.
+Do NOT return markdown.
+Do NOT return explanations outside JSON.
+Do NOT wrap response inside ```json.
 
-Rules:
-- Extract skills explicitly from context
-- Compare resume vs job description
-- If something is not present, do NOT assume
-- Do NOT add text outside JSON
+JSON format rules:
+- "reason" MUST always exist
+- "matching_skills" is OPTIONAL
+- "missing_skills" is OPTIONAL
+- Include a field ONLY if data exists
+- Never hallucinate skills
+- Only use skills explicitly present in context
+
+Valid response examples:
+
+{{"reason":"Candidate information is insufficient."}}
+
+{{"matching_skills":[""],"reason":""}}
+
+{{"missing_skills":[""],"reason":""}}
+
+{{"matching_skills":[""],"missing_skills":[""],"reason":""}}
+
+Output requirements:
+- JSON must be syntactically valid
+- Arrays must contain strings only
+- Keep response concise
+- No trailing commas
+- No extra keys
 
 Context:
 {context}
@@ -101,7 +119,6 @@ Context:
 Question:
 {query}
 """
-
         answer = generate(prompt)
 
         return {

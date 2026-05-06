@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import DropZone from '../UI/DropZone';
 import './Dashboard.css';
 

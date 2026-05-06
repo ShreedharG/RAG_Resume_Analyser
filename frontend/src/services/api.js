@@ -43,6 +43,13 @@ export const api = {
         return handleResponse(response);
     },
 
+    async deleteSession(id) {
+        const response = await fetch(`${API_BASE}/sessions/${id}`, {
+            method: "DELETE",
+        });
+        return handleResponse(response);
+    },
+
     async healthCheck() {
         try {
             const response = await fetch(`${API_BASE}/health`);

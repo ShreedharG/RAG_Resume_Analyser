@@ -1,0 +1,60 @@
+# ──────────────────────────────────────────────────────────────────
+# RAG Resume Analyser — Docker Compose
+#
+# Services:
+#   backend  → FastAPI on port 8000
+#   frontend → Nginx serving React build on port 80
+#
+# Volumes:
+#   rag_data → Persists ChromaDB embeddings, chat history, uploads
+# ──────────────────────────────────────────────────────────────────
+
+services:
+
+  # ── Backend (FastAPI + Uvicorn) ───────────────────────────────
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: rag_backend
+    restart: unless-stopped
+
+    # Load GEMINI_API_KEY from .env file at runtime (never baked into image)
+    env_file:
+      - .env
+
+    ports:
+      - "8000:8000"       # Direct API access / Swagger UI
+
+    volumes:
+      # Named volume for all persistent data
+      - rag_data:/app/backend/data
+
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # ── Frontend (React + Vite → Nginx) ──────────────────────────
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    container_name: rag_frontend
+    restart: unless-stopped
+
+    ports:
+      - "80:80"           # Main app access point
+
+    depends_on:
+      backend:
+        condition: service_healthy   # Wait until backend passes health check
+
+# ── Named Volumes ─────────────────────────────────────────────
+volumes:
+  rag_data:
+    name: rag_resume_data
+    # Data is stored inside Docker's managed volume storage
+    # To inspect: docker volume inspect rag_resume_data
